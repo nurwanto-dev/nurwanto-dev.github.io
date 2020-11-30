@@ -14,7 +14,6 @@ const assets = [
 
 // install event
 self.addEventListener('install', evt => {
-  //console.log('service worker installed');
   evt.waitUntil(
     caches.open(staticCacheName).then((cache) => {
       console.log('caching shell assets');
@@ -26,16 +25,45 @@ self.addEventListener('install', evt => {
 // activate event
 self.addEventListener('activate', evt => {
   //console.log('service worker activated');
+  // This will be called only once when the service worker is activated.
+  evt.waitUntil(
+    caches.keys().then(function (cacheNames) {
+      return Promise.all(
+        cacheNames.filter(function (cacheName) {
+          return cacheName != staticCacheName
+        }).map(function (cacheName) {
+          return caches.delete(cacheName)
+        })
+      );
+    })
+  );
+  // try {
+  //   const options = {}
+  //   const subscription = self.registration.pushManager.subscribe(options)
+  //   console.log(JSON.stringify(subscription))
+  // } catch (err) {
+  //   console.log('Error', err)
+  // }
 });
 
 // fetch event
 self.addEventListener('fetch', evt => {
-  //console.log('fetch event', evt);
   evt.respondWith(
-    caches.match(evt.request).then((resp) => {
-      if (resp) {
-        return resp;
-      };
-    })
-  )
+    caches.match(evt.request).then(function (response) {
+      // Cache hit - return response
+      if (response) {
+        return response;
+      }
+      return fetch(evt.request);
+    }
+    )
+  );
+
+  // evt.respondWith(
+  //   caches.match(evt.request).then((resp) => {
+  //     if (resp) {
+  //       return resp;
+  //     };
+  //   })
+  // )
 });
